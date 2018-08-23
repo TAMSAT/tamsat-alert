@@ -182,7 +182,7 @@ def sum_ensemble_members(members, start_day, start_month, end_day, end_month):
             if(date.month == end_month and date.day == end_day):
                 # We need to add the start_index to i,
                 # since enumerate() will start the index from 0
-                end_index = i + start_index + 1
+                end_index = i + start_index
                 break
 
         # Now slice the data between the desired indices, and sum
@@ -212,7 +212,11 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
         arbitrary_year, end_month, end_day)
     crosses_year = start_date > end_date
 
-    years = np.arange(start_year, end_year + 1)
+    if(crosses_year):
+        years = np.arange(start_year, end_year)
+    else:
+        years = np.arange(start_year, end_year + 1)
+
     values = []
     for year in years:
         start = dt.date(year, start_month, start_day)
