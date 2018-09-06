@@ -51,14 +51,14 @@ def risk_prob_plot(climastartyear, climaendyear,
     # creating folders to put output data and plot
     #------------------------------------------------------------------#
     # GG - Added outdir to paths
-    if not os.path.isdir(outdir+"./plot_output"):
-        os.makedirs(outdir+"./plot_output")
-    if not os.path.isdir(outdir+"./plot_output/gaussian"):
-        os.makedirs(outdir+"./plot_output/gaussian")
-    if not os.path.isdir(outdir+"./plot_output/ecdf"):
-        os.makedirs(outdir+"./plot_output/ecdf")
-    if not os.path.isdir(outdir+"./data_output"):
-        os.makedirs(outdir+"./data_output")
+    if not os.path.isdir(outdir+"/plot_output"):
+        os.makedirs(outdir+"/plot_output")
+    if not os.path.isdir(outdir+"/plot_output/gaussian"):
+        os.makedirs(outdir+"/plot_output/gaussian")
+    if not os.path.isdir(outdir+"/plot_output/ecdf"):
+        os.makedirs(outdir+"/plot_output/ecdf")
+    if not os.path.isdir(outdir+"/data_output"):
+        os.makedirs(outdir+"/data_output")
 
     # set up actual dates for the x axis representation
     date = dt.date(forecastyear, forecastmonth, forecastday)
@@ -119,7 +119,7 @@ def risk_prob_plot(climastartyear, climaendyear,
 
         out = np.vstack((probabilityclim, probabilityyields))
         # GG - Added output dir
-        np.savetxt(outdir+'./data_output/probyield_normal.txt', out.T, fmt='%0.2f')
+        np.savetxt(outdir+'/data_output/probyield_normal.txt', out.T, fmt='%0.2f')
 
     elif stat == 'ecdf':
         # calculate the emperical distribution
@@ -140,7 +140,7 @@ def risk_prob_plot(climastartyear, climaendyear,
         out = np.vstack((probabilityclim, probabilityyields))
 
         # GG - Added output dir
-        np.savetxt(outdir+'./data_output/probyield_ecdf.txt', out.T, fmt='%0.2f')
+        np.savetxt(outdir+'/data_output/probyield_ecdf.txt', out.T, fmt='%0.2f')
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
@@ -208,10 +208,10 @@ def risk_prob_plot(climastartyear, climaendyear,
     plt.tight_layout()
     if stat == 'normal':
         # GG - Added output dir
-        path = outdir + './plot_output/gaussian/'
+        path = outdir + '/plot_output/gaussian/'
     elif stat == 'ecdf':
         # GG - Added output dir
-        path = outdir + './plot_output/ecdf/'
+        path = outdir + '/plot_output/ecdf/'
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
     plt.savefig(path + sta_name + '_' + f_date + '_yieldprob.png', dpi=300)
@@ -281,10 +281,10 @@ def risk_prob_plot(climastartyear, climaendyear,
     plt.tight_layout()
     if stat == 'normal':
         # GG - Added outdir
-        path = outdir + './plot_output/gaussian/'
+        path = outdir + '/plot_output/gaussian/'
     elif stat == 'ecdf':
         # GG - Added outdir
-        path = outdir + './plot_output/ecdf/'
+        path = outdir + '/plot_output/ecdf/'
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
@@ -305,7 +305,7 @@ Category    RiskProbability'
     rp = np.array([category, pp])
     rp = rp.T
     # GG - Added outdir
-    np.savetxt(outdir + './data_output/RiskProbability.txt', rp,
+    np.savetxt(outdir + '/data_output/RiskProbability.txt', rp,
                delimiter='     ', header=headval, fmt='%i  %0.2f')
 
     #-------------------------------------------------------------------------#
@@ -340,10 +340,10 @@ Category    RiskProbability'
     plt.tight_layout()
     if stat == 'normal':
         # GG - Added outdir
-        path = outdir + './plot_output/gaussian/'
+        path = outdir + '/plot_output/gaussian/'
     elif stat == 'ecdf':
         # GG - Added outdir
-        path = outdir + './plot_output/ecdf/'
+        path = outdir + '/plot_output/ecdf/'
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
     plt.savefig(path + sta_name + '_' + f_date + '_ked_plot.png', dpi=300)
