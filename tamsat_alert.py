@@ -1,49 +1,75 @@
-# Required imports for numerical stuff
 import numpy as np
 import pandas as pd
 import datetime as dt
 from collections import OrderedDict
-from tamsat_alert_plots import risk_prob_plot
+from .tamsat_alert_plots import risk_prob_plot
+from .extract_data import extract_timeseries
 
 
-def tamsat_alert(filename, leapremoved, datastartyear, dataendyear, init_year, init_month, init_day, periodstart_year, periodstart_month, periodstart_day, periodend_year, periodend_month, periodend_day, climstartyear, climendyear, leapinit, climatological_metric_file, forecast_metric_file, ensemble_metric_file, intereststart_month, intereststart_day, interestend_month, interestend_day, intereststart_year, interestend_year, rainfallcolumn, calccumulative, forcintereststart_month, forcintereststart_day, forcinterestend_month, forcinterestend_day, stat, sta_name, weights, outdir):
+def tamsat_alert(data_path, lat, lon, cast_date,
+                 run_start, run_end,
+                 # Hopefully ditch these and use data bounds
+                 climstartyear, climendyear,
+
+                 # These are required, but could do with a better name
+                 intereststart_month, intereststart_day, interestend_month, interestend_day,
+
+                 # Hopefully ditch these and use data bounds
+                 intereststart_year, interestend_year,
+
+                 # Required, move it down though
+                 cumulative_not_mean,
+
+                 # These are required, give them a better name
+                 forcintereststart_month, forcintereststart_day, forcinterestend_month, forcinterestend_day,
+
+                 # Type of statistic to use in the plot
+                 norm_not_ecdf,
+
+                 # This is the plot title.  TODO - Default/fixed value for it
+                 sta_name,
+
+                 # Need to document this better
+                 weights,
+
+                # Move up the list?
+                output_dir):
     '''
     Generates the data and plots for TAMSAT Alert.  Currently a work-in-progress.
     The method signature will change in the near future, so not currently documented
+
+    :param data_path:   The path to the TAMSAT rainfall data
+    :param lat:         The latitude at which to extract data
+    :param lon:         The longitude at which to extract data
+    :param cast_date:   The date at which to start fore/hind-cast
+    :param run_start:   The start date for the runs.  All ensembles will be
+                        constructed from data between this date and cast_date
+    :param run_start:   The end date for the runs.  All ensembles will be
+                        constructed from data between cast_date and this date,
+                        but for every available year in the dataset
     '''
 
-    # Setup variables temporarily.
-    # These will be replaced by args when we have the full code,
-    # and the function signature is finalised
+    # Some sanity checks
+    # TODO more of these
+    if(cast_date < run_start or cast_date > run_end):
+        raise ValueError('cast_date must fall between run_start and run_end')
+
+    # Extract a DataFrame containing the data at the specified location
+    data = extract_point_timeseries(data_path, lat, lon)
 
     # This can be a single value or an array
     vars_of_interest = ['rfe']
-    # The date of the forecast / hindcast
-    cast_date = dt.date(init_year, init_month, init_day)
-    # The start and end dates for the run - these define the ensembles.
-    # The cast_date should be between these dates TODO - sanity check
-    run_start = dt.date(periodstart_year, periodstart_month, periodstart_day)
-    run_end = dt.date(periodend_year, periodend_month, periodend_day)
+
     # The start and end years to create ensemble members from
     ensemble_start_year = climstartyear
     ensemble_end_year = climendyear
+    # TODO - Do we want the entire range of the dataset here?
+    # ensemble_start_year = data.index[0].year
+    # ensemble_end_year = data.index[-1].year
+    # TODO - These can possibly be used as interest[start/end]_year
+    # Otherwise we need some other way of determining the start/end year of interest
 
-    # All this code will go - it will be extracted from the data files
-    # using Ross's extraction code
-    raw_data = np.genfromtxt(filename)
-    # Data is defined to always start on the 1st January
-    current_date = dt.date(datastartyear, 1, 1)
-    # Create array of dates
-    dates = np.empty(raw_data.shape[0], dt.date)
-    for i in np.arange(len(dates)):
-        dates[i] = current_date
-        current_date += dt.timedelta(days=1)
-    data = pd.DataFrame(raw_data, dates,
-                        columns=['col1', 'col2', 'rfe', 'col4', 'col5', 'col6', 'col7', 'col8', 'col9', 'col10'])
-
-    # TODO some sanity checks on various input parameters:
-
-    # Select the data we want to deal with
+    # Select only the data we want to deal with
     data = data[vars_of_interest]
 
     # Remove leap years from data
@@ -69,7 +95,7 @@ def tamsat_alert(filename, leapremoved, datastartyear, dataendyear, init_year, i
         interestend_day, interestend_month)
 
     # Pick which operation to perform on the ensemble members
-    if calccumulative:
+    if cumulative_not_mean:
         operation = np.sum
     else:
         operation = np.mean
@@ -97,16 +123,24 @@ def tamsat_alert(filename, leapremoved, datastartyear, dataendyear, init_year, i
     # It now takes the DataFrames rather than filenames, but is otherwise
     # the same as in the old version.
 
-    # TODO The old version possibly had the last 3 arguments in the wrong order
-    # Check what order they're supposed to be in
-    risk_prob_plot(climstartyear, climendyear, datastartyear, dataendyear,          init_year, init_month, init_day, stat, sta_name, weights, climatological_sums, ensemble_totals, forecast_sums, outdir)
+    # Plot function chooses statistic type based on a string
+    stat = norm_not_ecdf ? 'norm' : 'ecdf'
+
+    risk_prob_plot(climstartyear, climendyear, datastartyear, dataendyear,          init_year, init_month, init_day, stat, sta_name, weights, climatological_sums, ensemble_totals, forecast_sums, output_dir)
+
+    # Now go into output_dir and create a zip file containing everything.
+    # TODO return path to the zip file?
+    # TODO create a temporary output dir, pass it to risk_prob_plot, zip everything
+    # based on an input parameter, then return that path?
 
 
 def strip_leap_days(data):
     '''
-    Takes a pandas DataFrame whose index is a datetime.date, and return a
-    copy of the DataFrame, with any rows which fall on February 29th removed.
-    This guarantees that all years have the same length.
+    Removes leap days from a dataset
+
+    :param data: A pandas DataFrame containing the data to remove leap years from
+    :return: A copy of the same pandas DataFrame, with all values occurring
+             on the 29th February removed
     '''
     stripped_data = data.drop(
         [date for date in data.index
@@ -127,6 +161,22 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
 
     i.e. It is a bunch of timeseries which start the same, but then vary going forward
     from the (fore/hind)cast date
+
+    :param data:                The timeseries data
+    :param no_leap_data:        The timeseries data, with leap days removed
+    :param cast_date:           The (fore/hind)cast date
+    :param run_start:           The date to start ensemble runs
+    :param run_end:             The date to end ensemble runs
+    :param ensemble_start_year: The first year in the data to construct an
+                                ensemble run from
+    :param ensemble_end_year:   The last year in the data to construct an
+                                ensemble run from
+    :param retain_leaps:        If True, keeps leap days in the spinup data
+                                Optional, defaults to True
+
+    :return:                    An OrderedDict whose keys are the ensemble years
+                                and whose values are pandas DataFrames containing
+                                the ensemble data
     '''
 
     spinupdata = data if retain_leaps else no_leap_data
@@ -158,10 +208,20 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
 def sum_ensemble_members(members, start_day, start_month, end_day, end_month):
     '''
     Calculates the sum of the values in each ensemble member ranging
-    from the first occurrence of (start_day, start_month) to the next occurrence
-    of (end_day, end_month), inclusive.
+    from the first occurrence of (start_day, start_month) to the next
+    occurrence of (end_day, end_month), inclusive.
 
-    Returns an OrderedDict mapping ensemble members to the appropriate sum
+    :param members:     An OrderedDict containing ensemble years mapped to
+                        pandas DataFrames with ensemble data
+    :start_day:         The day of the month at which to start the sum over
+    :start_month:       The month of the year at which to start the sum over
+    :end_day:           The day of the month at whose first occurrence to
+                        end the sum
+    :end_month:         The month of the year at whose first occurrence to
+                        end the sum
+
+    :return:            A DataFrame whose index is the keys of members, and
+                        whose values are the calculated sums
     '''
 
     values = []
@@ -194,10 +254,22 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
     '''
     For each year between start_year and end_year, performs the operation
     on data ranging from the start date (start_day/start_month),
-    to the end date (end_day/end_month) of the year.
+    to the end date (end_day/end_month) of that year.
 
-    Note that we could have used start_date and end_date, but this would imply
-    that ALL dates in that range were operated on.
+    If the start-end dates cross the year boundary, the year is defined as the
+    year at the start date.
+
+    :param data_no_leaps:   A pandas DataFrame containing the data, with leap days removed
+    :param start_day:       The day of the month to start operating on
+    :param start_month:     The month of the year to start operating on
+    :param end_day:         The day of the month to stop operating on (exclusive)
+    :param end_month:       The month of the year to stop operating on (exclusive)
+    :param start_year:      The first year to perform the operation on
+    :param end_year:        The last year to perform the operation on.
+    :param operation:       The operation to perform.  Should be a function (e.g. np.sum)
+
+    :return:                A pandas DataFrame containing years as the index, and
+                            the results of the operation as the values
     '''
 
     # This should be a leap year, to ensure we will have a valid date
@@ -227,6 +299,13 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
             before_end_year = year + 1
         end = dt.date(
             before_end_year, end_month, end_day)
+
+        if(end > data_no_leaps.index[-1]):
+            # In this case, the end point falls outside the data range
+            # This would lead to truncated data, so we do not perform the
+            # operation.  This will also be true for all following years,
+            # hence we use break, rather than continue
+            break
 
         # Subset the data to extract the desired period for the current year
         subset = data_no_leaps.loc[np.logical_and(
