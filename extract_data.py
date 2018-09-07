@@ -13,7 +13,7 @@ import xarray as xr
 import pandas as pd
 from glob import glob
 
-def extract_point_timeseries(path, lat, lon):
+def extract_point_timeseries(path, lon, lat):
     """
     Extracts a timeseries from a set of NetCDF files at a specified location.
 
