@@ -99,7 +99,7 @@ def tamsat_alert(data,
         raise ValueError('cast_date must fall between run_start and run_end')
 
     # Select only the data we want to deal with
-    data = data[var]
+    data = data[var_of_interest]
 
     # Remove leap years from data
     # This is so that when we construct ensemble members from historical runs,
