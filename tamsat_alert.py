@@ -213,8 +213,6 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
 
     spinupdata = data if retain_leaps else no_leap_data
 
-    print('init ensembles', cast_date, type(cast_date), run_start, type(run_start), spinupdata.index[0], type(spinupdata.index[0]))
-
     spinup = spinupdata.loc[np.logical_and(
         spinupdata.index >= run_start, spinupdata.index < cast_date)]
 
