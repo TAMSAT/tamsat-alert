@@ -22,7 +22,7 @@ def extract_point_timeseries(path, lon, lat):
                  the files must match the time order
     :param lat: The latitude at which to extract a timeseries
     :param lon: The longitude at which to extract a timeseries
-    :returns: A pandas DataFrame containing all variables present in the NetCDF dataset
+    :return: A pandas DataFrame containing all variables present in the NetCDF dataset
     """
     # Construct list of files to use.  These should be alphanumerically ordered
     file_list = sorted(glob(path))
