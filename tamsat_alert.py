@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
-from .tamsat_alert_plots import risk_prob_plot
-from .extract_data import extract_point_timeseries
+from tamsat_alert_plots import risk_prob_plot
 
 
 def tamsat_alert(data,
@@ -21,8 +20,7 @@ def tamsat_alert(data,
                  run_start=None, run_end=None,
                  location_name=None):
     '''
-    Generates the data and plots for TAMSAT Alert.  Currently a work-in-progress.
-    The method signature will change in the near future, so not currently documented
+    Generates the data and plots for the cumulative rainfall part of TAMSAT Alert.
 
     :param data:            A pandas DataFrame containing the data to use for running
                             the TAMSAT alert code
