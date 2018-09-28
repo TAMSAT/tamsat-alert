@@ -15,7 +15,7 @@ def tamsat_alert(data,
                  tercile_weights=[1,1,1],
                  clim_start_year=None, clim_end_year=None,
                  poi_start_year=None, poi_end_year=None,
-                 norm_not_ecdf=True,
+                 stat_type='normal',
                  cum_not_mean=True,
                  run_start=None, run_end=None,
                  location_name=None):
@@ -46,9 +46,9 @@ def tamsat_alert(data,
                             Optional - if not specified, uses the first year in the data
     :param poi_end_year:    The last year of interest
                             Optional - if not specified, uses the last year in the data
-    :param norm_not_ecdf:   The probability distribution to use for percentile calculations
-                            True is normal, False is ECDF
-                            Optional, defaults to True
+    :param stat_type:       The probability distribution to use for percentile calculations
+                            Accepted values are 'normal' and 'ecdf'
+                            Optional, defaults to 'normal'
     :param cum_not_mean:    What operation to perform on the results
                             True is cumulative (i.e. numpy.sum())
                             False is mean (i.e. numpy.mean())
@@ -146,20 +146,13 @@ def tamsat_alert(data,
                                         poi_end_year,
                                         operation)
 
-
-    # Plot function chooses statistic type based on a string
-    if(norm_not_ecdf):
-        stat = 'normal'
-    else:
-        stat = 'ecdf'
-
     # This has been only very slightly modified from its original state
     # It now takes the DataFrames rather than filenames, and and output dir,
     # but is otherwise the same as in the old version.
     risk_prob_plot(clim_start_year, clim_end_year,
                    data.index[0].year, data.index[-1].year,
                    cast_date.year, cast_date.month, cast_date.day,
-                   stat, location_name, tercile_weights,
+                   stat_type, location_name, tercile_weights,
                    climatological_sums, ensemble_totals, forecast_sums,
                    output_dir)
 
