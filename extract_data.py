@@ -16,7 +16,7 @@ def _get_dataset(path):
     :param path: A glob expression specifying the location of the data.
                  When full paths are listed, the alphanumeric order of
                  the files must match the time order
-    :return: An xarray dataset
+    :return: An tuple containing (xarray dataset, name of lon dim, name of lat dim)
     """
     # Construct list of files to use.  These should be alphanumerically ordered
     file_list = sorted(glob(path))
@@ -24,10 +24,35 @@ def _get_dataset(path):
     # Construct an xarray dataset with all of the files
     dataset = xr.open_mfdataset(file_list,
                                 decode_times=True,
-                                autoclose=True)
+                                autoclose=True,
+                                concat_dim='time')
+
+    # Determine the name of the lat / lon dimensions
+    lon_name = None
+    lat_name = None
+    for coord_name in dataset.coords:
+        try:
+            units = dataset.coords[coord_name].attrs['units']
+            if(units in ['degrees_north',
+                         'degree_north',
+                         'degree_N',
+                         'degrees_N',
+                         'degreeN',
+                         'degreesN']):
+                lat_name = coord_name
+            elif(units in ['degrees_east',
+                           'degree_east',
+                           'degree_E',
+                           'degrees_E',
+                           'degreeE',
+                           'degreesE']):
+                lon_name = coord_name
+        except KeyError:
+            # Ignore this - it means the units attribute is not present
+            pass
 
     # Decode CF metadata (this is quick, but creates a new dataset)
-    return xr.decode_cf(dataset)
+    return xr.decode_cf(dataset), lon_name, lat_name
 
 
 def extract_point_timeseries(path, lon, lat):
@@ -41,10 +66,13 @@ def extract_point_timeseries(path, lon, lat):
     :param lat: The latitude at which to extract a timeseries
     :return: A pandas DataFrame containing all variables present in the NetCDF dataset
     """
-    dataset = _get_dataset(path)
+    dataset, lon_name, lat_name = _get_dataset(path)
 
     # Select nearest neighbour to co-ordinate of interest, for all variables
-    timeseries = dataset.sel(lat=lat, lon=lon, method='nearest')
+    timeseries = dataset.sel({
+        lon_name: lon,
+        lat_name: lat
+    }, method='nearest')
 
     # Create a pandas DataFrame from the selected data
     # This is where the extraction happens
@@ -66,16 +94,16 @@ def extract_area_mean_timeseries(path, minlon, maxlon, minlat, maxlat):
     :param maxlon: The maximum longitude of the region over which to extract a timeseries
     :return: A pandas DataFrame containing all variables present in the NetCDF dataset
     """
-    dataset = _get_dataset(path)
+    dataset, lon_name, lat_name = _get_dataset(path)
 
-    ln = dataset.coords['lon']
-    lt = dataset.coords['lat']
+    ln = dataset.coords[lon_name]
+    lt = dataset.coords[lat_name]
     # Select the region of the data
     subset = dataset.loc[dict(
         lon=ln[(ln >= minlon) & (ln <= maxlon)],
         lat=lt[(lt >= minlat) & (lt <= maxlat)])]
     # Take the mean over the lon/lat dimensions
-    timeseries = subset.mean(dim=('lon', 'lat'), skipna=True)
+    timeseries = subset.mean(dim=(lon_name, lat_name), skipna=True)
 
     # Create a pandas DataFrame from the selected data
     # This is where the extraction happens
