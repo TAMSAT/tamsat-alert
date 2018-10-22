@@ -25,6 +25,7 @@ def _get_dataset(path):
     dataset = xr.open_mfdataset(file_list,
                                 decode_times=True,
                                 autoclose=True,
+                                decode_cf=True,
                                 concat_dim='time')
 
     # Determine the name of the lat / lon dimensions
@@ -52,7 +53,7 @@ def _get_dataset(path):
             pass
 
     # Decode CF metadata (this is quick, but creates a new dataset)
-    return xr.decode_cf(dataset), lon_name, lat_name
+    return dataset, lon_name, lat_name
 
 
 def extract_point_timeseries(path, lon, lat):
