@@ -26,6 +26,7 @@ def _get_dataset(path):
                                 decode_times=True,
                                 autoclose=True,
                                 decode_cf=True,
+                                cache=False,
                                 concat_dim='time')
 
     # Determine the name of the lat / lon dimensions
@@ -67,6 +68,7 @@ def extract_point_timeseries(path, lon, lat):
     :param lat: The latitude at which to extract a timeseries
     :return: A pandas DataFrame containing all variables present in the NetCDF dataset
     """
+
     dataset, lon_name, lat_name = _get_dataset(path)
 
     # Select nearest neighbour to co-ordinate of interest, for all variables
@@ -77,7 +79,15 @@ def extract_point_timeseries(path, lon, lat):
 
     # Create a pandas DataFrame from the selected data
     # This is where the extraction happens
-    df = timeseries.to_dataframe()
+    # Multiplying by 1.0 reduces memory usage enormously.
+    #
+    # The reason for this is a bit of a mystery, but I suspect
+    # that without it, it is loading the entire dataset into memory
+    # and returning a view onto that dataset.
+    #
+    # With it, it no longer considers the rest of the dataset to be
+    # relevant, so it throws it away.
+    df = (timeseries*1.0).to_dataframe()
 
     return df
 
@@ -99,10 +109,11 @@ def extract_area_mean_timeseries(path, minlon, maxlon, minlat, maxlat):
 
     ln = dataset.coords[lon_name]
     lt = dataset.coords[lat_name]
-    # Select the region of the data
-    subset = dataset.loc[dict(
-        lon=ln[(ln >= minlon) & (ln <= maxlon)],
-        lat=lt[(lt >= minlat) & (lt <= maxlat)])]
+
+    subset = dataset.loc[{
+        lon_name: ln[(ln >= minlon) & (ln <= maxlon)],
+        lat_name: lt[(lt >= minlat) & (lt <= maxlat)]
+        }]
     # Take the mean over the lon/lat dimensions
     timeseries = subset.mean(dim=(lon_name, lat_name), skipna=True)
 
