@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
 import utils_sm
-from tamsat_alert import ensemble_timeseries, strip_leap_days
-from tamsat_alert_plots import risk_prob_plot
+from .tamsat_alert import ensemble_timeseries, strip_leap_days
+from .tamsat_alert_plots import risk_prob_plot
 
 def tamsat_alert_sm(data,
                     fc_data,
+                    met_ts_varname,
                     cast_date,
                     soil_texture_str,
                     output_dir,
@@ -50,8 +51,10 @@ def tamsat_alert_sm(data,
     '''
     Generates the data and plots for the soil moisture aspect of TAMSAT ALERT.
 
-    :param data:            A pandas DataFrame containing the data to use for running
-                            the TAMSAT alert code
+    :param data:            A pandas DataFrame containing the data to use for running the TAMSAT alert code
+    :param fc_data:         A pandas DataFrame containing the data to use for providing meteorological forecast time series to inform the allocation of ensemble member weights
+    :param met_ts_varname:  A string indicating whether the meteorological forecast is for temperature or for precipitation. Acceptable values are:
+                            'precipitation','temperature'
     :param cast_date:       The date at which to start fore/hind-cast.
                             This should be a pandas Timestamp object
     :param soil_texture_str:A string representing the soil texture.  Acceptable values are:
@@ -125,7 +128,7 @@ def tamsat_alert_sm(data,
                                 'num_spin_year' - how many years of data to use for
                                                 spinup (default 2)
                                 'spin_cyc' - how many times to run the spinup (default 5)
-                                'data_period' - ??? (default 86400) ECB: Don't know why this is here. The function didn't work when I ran it. 
+                                'data_period' - ??? (default 86400) ECB: Don't know why this is here. The function didn't work when I ran it.
                                 'model_t_step' - ???(default 3600)
     :param initial_conditions: A dictionary containing parameters for ???
                             Keys must include all of:
@@ -160,8 +163,12 @@ def tamsat_alert_sm(data,
     operation = np.sum
     # GG End
     
-    #ECB changed tmp so that the met forecast data can come from a different source to the SM driving data. 
-    tmp = fc_data[precipitation_rate_str]
+    #ECB changed tmp so that the met forecast data can come from a different source to the SM driving data.
+    #ECB added in variable met_ts_varname, which indicates whether we are using the temperature or precipitation from the fc_data pandas dataframe as our meteorological forecast variable.
+    if met_ts_varname == "precipitation":
+        tmp = fc_data[precipitation_rate_str]
+    if met_ts_varname == "temperature":
+        tmp = fc_data[temperature_str]
     met_ts = strip_leap_days(tmp)
 
     forecast_sums = ensemble_timeseries(met_ts,
@@ -176,8 +183,8 @@ def tamsat_alert_sm(data,
 
 
 
-    # reading driving data. 
-    #ECB note. Check that the units require this conversion. 
+    # reading driving data.
+    #ECB note. Check that the units require this conversion.
     P = data[precipitation_rate_str] / 86400 # precipitation (Kg m-2 s-1)
     T = data[temperature_str]  # temperature (K)
     p = data[pressure_str]  # pressure (Pa)
@@ -370,27 +377,26 @@ def tamsat_alert_sm(data,
 
 
 
-'''
-if __name__ == '__main__':
-    # Example code
-    kitale_data = pd.read_table("kitale_all_hist.txt", header=None, sep=" ")
-    kitale_data.columns=["sw","lw","pr","snow","temp","P","uwind","vwind","q","Trange"]
-    rng = pd.date_range('1/1/1981', periods=kitale_data.shape[0], freq='D')
-    kitale_data = kitale_data.set_index(rng)
 
-    tamsat_alert_sm(kitale_data,
-                    kitale_data,
-                    pd.Timestamp(2017,2,1),
-                    'sandy loam',
-                    './outtest/',
-                    1, 3,
-                    30, 5,
-                    1, 3,
-                    30, 5,
-                    200,
-                    tercile_weights=[1,1,1],
-                    clim_start_year=1981, clim_end_year=2017,
-                    poi_start_year=2017, poi_end_year=2017,
-                    norm_not_ecdf=True,
-                    location_name='kitale')
-'''
+#if __name__ == '__main__':
+    # Example code
+#    kitale_data = pd.read_table("kitale_all_hist.txt", header=None, sep=" ")
+#    kitale_data.columns=["sw","lw","pr","snow","temp","P","uwind","vwind","q","Trange"]
+#    rng = pd.date_range('1/1/1981', periods=kitale_data.shape[0], freq='D')
+#    kitale_data = kitale_data.set_index(rng)
+
+#    tamsat_alert_sm(kitale_data,
+#                    kitale_data,
+#                    pd.Timestamp(2017,2,1),
+#                    'sandy loam',
+#                    './outtest/',
+#                    1, 3,
+#                    30, 5,
+#                    1, 3,
+#                    30, 5,
+#                    200,
+#                    tercile_weights=[1,1,1],
+#                    clim_start_year=1981, clim_end_year=2017,
+#                    poi_start_year=2017, poi_end_year=2017,
+#                    norm_not_ecdf=True,
+#                    location_name='kitale')
