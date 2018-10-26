@@ -4,7 +4,9 @@ from collections import OrderedDict
 from .tamsat_alert_plots import risk_prob_plot
 
 
-def tamsat_alert(data,
+def tamsat_alert(fc_data,
+                 met_ts_varname,
+                 data,
                  cast_date,
                  var_of_interest,
                  output_dir,
@@ -12,6 +14,8 @@ def tamsat_alert(data,
                  poi_end_day, poi_end_month,
                  fc_start_day, fc_start_month,
                  fc_end_day, fc_end_month,
+                 precipitation_rate_str='pr', #ECB added in precipitation_rate_str and temperature_str as defaults to be set in the back end. These allow the meteorological forecast variable to be set by the user.
+                 temperature_str='temp',
                  tercile_weights=[1,1,1],
                  clim_start_year=None, clim_end_year=None,
                  poi_start_year=None, poi_end_year=None,
@@ -22,6 +26,10 @@ def tamsat_alert(data,
     '''
     Generates the data and plots for the cumulative rainfall part of TAMSAT Alert.
 
+    :param fc_data:         A pandas DataFrame containing the data to use for providing
+                            meteorological forecast time series to inform the allocation of ensemble member weights. This should be an area averaged time series for each of the driving variables.
+    :param met_ts_varname:  A string indicating whether the meteorological forecast is for temperature or for precipitation. Acceptable values are:
+                            'precipitation','temperature'
     :param data:            A pandas DataFrame containing the data to use for running
                             the TAMSAT alert code
     :param cast_date:       The date at which to start fore/hind-cast.
@@ -98,6 +106,12 @@ def tamsat_alert(data,
 
     # Select only the data we want to deal with
     data = data[var_of_interest]
+    #ECB Select the the meteorological time series (precipitation or temperature) for the meteorological forecast time series
+    if met_ts_varname == "precipitation":
+        tmp = fc_data[precipitation_rate_str]
+    if met_ts_varname == "temperature":
+        tmp = fc_data[temperature_str]
+    fc_data_no_leaps = strip_leap_days(tmp)
 
     # Remove leap years from data
     # This is so that when we construct ensemble members from historical runs,
@@ -106,6 +120,7 @@ def tamsat_alert(data,
     # If there are already no leap years in the data, this will return an identical
     # pandas dataframe
     data_no_leaps = strip_leap_days(data)
+    
 
     # Initialise the ensemble members.  This returns an OrderedDict mapping
     # ensemble member years (as ints) to the data
@@ -137,7 +152,8 @@ def tamsat_alert(data,
                                         poi_end_year,
                                         operation)
 
-    forecast_sums = ensemble_timeseries(data_no_leaps,
+    #ECB adjusted to read in fc_data with no leap years
+    forecast_sums = ensemble_timeseries(fc_data_no_leaps,
                                         fc_start_day,
                                         fc_start_month,
                                         fc_end_day,
