@@ -25,16 +25,16 @@ def risk_prob_plot(climastartyear, climaendyear,
                    forecastday, stat, sta_name, weights,
                    climatology, forecast_vals, weightings, outdir = './'):
     """
-    This function plot the probability estimates for poor yield for a single date
+    This function plot the probability estimates for a given risk metric for a single date
     forecast given in the configuration file.
 
     :param climastartyear: the year climatology value start.
     :param climaendyear: the year climatology value end.
     :param datastartyear: the year the data set start
     :param dataendyear: the the year the data set end
-    :param forecastyear: the year for which we are going to forecast yield
+    :param forecastyear: the year for which we are going to forecast the metric
                          from historical climatic weather.
-    :param forecastmonth: the month for which we are going to forecast yield
+    :param forecastmonth: the month for which we are going to forecast the metric
                          from historical climatic weather.
     :param forecastday: the day forecast start.(The last day for which
                         the forecast year has a data)
@@ -85,8 +85,8 @@ def risk_prob_plot(climastartyear, climaendyear,
     climasd = np.std(climametric)
 
     # calcualte the mean and sd of the the projected
-    # yield based on climatology weather data
-    # we need the weighted yield frorecast
+    # metric based on climatology weather data
+    # we need the weighted metric frorecast
 
     fdate = f_date
     yr = forecastyear
@@ -100,47 +100,47 @@ def risk_prob_plot(climastartyear, climaendyear,
 
     if stat == 'normal':
         # calculate the normal distribution
-        probabilityyields = []
+        probabilitymetric = []
         probabilityclim = []
         for z in range(0, len(thresholds)):
             thres = sps.norm.ppf(thresholds[z], climamean, climasd)
             # print(thres)
             # (climamean,climasd)
             # print(projmean,projsd)
-            #probyield = sps.norm.cdf(thres,climamean,climasd)
-            # print(probyield)
+            #probmetric = sps.norm.cdf(thres,climamean,climasd)
+            # print(probmetric)
             probclim = sps.norm.cdf(thres, climamean, climasd)
-            probyield = sps.norm.cdf(thres, projmean, projsd)
-            # print(probyield)
-            probabilityyields = np.append(probabilityyields, probyield)
+            probmetric = sps.norm.cdf(thres, projmean, projsd)
+            # print(probmetric)
+            probabilitymetric = np.append(probabilitymetric, probmetric)
             probabilityclim = np.append(probabilityclim, probclim)
 
-            del probyield
+            del probmetric
 
-        out = np.vstack((probabilityclim, probabilityyields))
+        out = np.vstack((probabilityclim, probabilitymetric))
         # GG - Added output dir
-        np.savetxt(outdir+'/data_output/probyield_normal.txt', out.T, fmt='%0.2f')
+        np.savetxt(outdir+'/data_output/prob_normal.txt', out.T, fmt='%0.2f')
 
     elif stat == 'ecdf':
         # calculate the emperical distribution
         ecdf_clima = ECDF(climametric)
-        probabilityyields = []
+        probabilitymetric = []
         probabilityclim = []
 
         for z in range(0, len(ecdf_clima.x)):
             thres = ecdf_clima.x[z]  # (thresholds[z])
             ecdf_proj = ECDF(forecametric)
             probclim = ecdf_clima(thres)
-            probyield = ecdf_proj(thres)
-            probabilityyields = np.append(probabilityyields, probyield)
+            probmetric = ecdf_proj(thres)
+            probabilitymetric = np.append(probabilitymetric, probmetric)
             probabilityclim = np.append(probabilityclim, probclim)
 
-            del probyield
+            del probmetric
 
-        out = np.vstack((probabilityclim, probabilityyields))
+        out = np.vstack((probabilityclim, probabilitymetric))
 
         # GG - Added output dir
-        np.savetxt(outdir+'/data_output/probyield_ecdf.txt', out.T, fmt='%0.2f')
+        np.savetxt(outdir+'/data_output/prob_ecdf.txt', out.T, fmt='%0.2f')
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
@@ -149,34 +149,34 @@ def risk_prob_plot(climastartyear, climaendyear,
     #-------------------------------------------------------------------#
     # Risk probability plot (origional format ECB)
     sns.set_style("ticks")
-    fig = plt.figure()
+    fig = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     if stat == 'normal':
         # Plot using normal distribution
         plt.plot(thresholds * 100, thresholds,
                  '--k', lw=1, label='Climatology')
-        line = plt.plot(thresholds * 100, probabilityyields,
+        line = plt.plot(thresholds * 100, probabilitymetric,
                         'k', lw=1, label='Projected')
         # indicating critical points
         # below average
         highlight_point(ax, line[0], [thresholds[79]
-                                      * 100, probabilityyields[79]], 'g')
+                                      * 100, probabilitymetric[79]], 'g')
         # below average
         highlight_point(ax, line[0], [thresholds[59]
-                                      * 100, probabilityyields[59]], 'y')
+                                      * 100, probabilitymetric[59]], 'y')
         # below average
         highlight_point(ax, line[0], [thresholds[39]
-                                      * 100, probabilityyields[39]], 'm')
+                                      * 100, probabilitymetric[39]], 'm')
         # well below average
         highlight_point(ax, line[0], [thresholds[19]
-                                      * 100, probabilityyields[19]], 'r')
+                                      * 100, probabilitymetric[19]], 'r')
 
     elif stat == 'ecdf':
         # Plot using emperical cumulative distribution
 
         plt.plot(ecdf_clima.y * 100, ecdf_clima.y,
                  '--k', lw=1, label='Climatology')
-        line = plt.plot(ecdf_clima.y * 100, probabilityyields,
+        line = plt.plot(ecdf_clima.y * 100, probabilitymetric,
                         'k', lw=1, label='Projected')
         # identifying the index for the critical points
         nn = int(round(len(climayears) / 5., 0))  # this should be an intiger
@@ -186,21 +186,21 @@ def risk_prob_plot(climastartyear, climaendyear,
         av_i = (nn * 4)
         # indicating critical points
         highlight_point(ax, line[0], [
-                        ecdf_clima.y[av_i] * 100, probabilityyields[av_i]], 'g')  # below average
+                        ecdf_clima.y[av_i] * 100, probabilitymetric[av_i]], 'g')  # below average
         highlight_point(ax, line[0], [
-                        ecdf_clima.y[a_i] * 100, probabilityyields[a_i]], 'y')  # below average
+                        ecdf_clima.y[a_i] * 100, probabilitymetric[a_i]], 'y')  # below average
         highlight_point(ax, line[0], [
-                        ecdf_clima.y[ba_i] * 100, probabilityyields[ba_i]], 'm')  # below average
+                        ecdf_clima.y[ba_i] * 100, probabilitymetric[ba_i]], 'm')  # below average
         highlight_point(ax, line[0], [
-                        ecdf_clima.y[wba_i] * 100, probabilityyields[wba_i]], 'r')  # well below average
+                        ecdf_clima.y[wba_i] * 100, probabilitymetric[wba_i]], 'r')  # well below average
 
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
     plt.title('Theme: Probability of metric estimate (against ' + str(climastartyear) + '-' + str(climaendyear) +
               ' climatology)\nLocation: ' + sta_name + '\nForecast date: ' + f_date, loc='left', fontsize=14)
-    plt.xlabel('Climatological percentile', fontsize=14)
-    plt.ylabel('Probability <= Climatological percentile', fontsize=14)
+    plt.xlabel('Climatological percentile (%)', fontsize=14)
+    plt.ylabel('Probability of metric '+'$\leq$'+' Climatological percentile', fontsize=14)
 
     plt.yticks(fontsize=14)
     plt.xticks(fontsize=14)
@@ -214,19 +214,19 @@ def risk_prob_plot(climastartyear, climaendyear,
         path = outdir + '/plot_output/ecdf/'
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
-    plt.savefig(path + sta_name + '_' + f_date + '_yieldprob.png', dpi=300)
+    plt.savefig(path + sta_name + '_' + f_date + '_metricprob.png', dpi=300)
     plt.close()
 
     #-------------------------------------------------------------------------#
     # Risk probability plot (Pentile bar plot format DA)
     pp = []
     sns.set_style("ticks")
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,6))
     if stat == 'normal':
-        verylow = probabilityyields[19]
-        low = probabilityyields[39] - verylow
-        average = probabilityyields[59] - (verylow + low)
-        high = probabilityyields[79] - (verylow + low + average)
+        verylow = probabilitymetric[19]
+        low = probabilitymetric[39] - verylow
+        average = probabilitymetric[59] - (verylow + low)
+        high = probabilitymetric[79] - (verylow + low + average)
         veryhigh = 1 - (verylow + low + average + high)
     elif stat == 'ecdf':
         # identifying the index for the critical points
@@ -236,13 +236,13 @@ def risk_prob_plot(climastartyear, climaendyear,
         a_i = (nn * 3)
         av_i = (nn * 4)
 
-        verylow = probabilityyields[wba_i]
-        low = probabilityyields[ba_i] - probabilityyields[wba_i]  # verylow
-        average = probabilityyields[a_i] - \
-            probabilityyields[ba_i]  # (verylow+low)
-        high = probabilityyields[av_i] - \
-            probabilityyields[a_i]  # (verylow+low+average)
-        veryhigh = 1 - probabilityyields[av_i]  # (verylow+low+average+high)
+        verylow = probabilitymetric[wba_i]
+        low = probabilitymetric[ba_i] - probabilitymetric[wba_i]  # verylow
+        average = probabilitymetric[a_i] - \
+            probabilitymetric[ba_i]  # (verylow+low)
+        high = probabilitymetric[av_i] - \
+            probabilitymetric[a_i]  # (verylow+low+average)
+        veryhigh = 1 - probabilitymetric[av_i]  # (verylow+low+average+high)
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
@@ -273,7 +273,8 @@ def risk_prob_plot(climastartyear, climaendyear,
     plt.yticks(pos, ('Very low', 'Low', 'Average',
                      'High', 'Very high'), fontsize=14)
     plt.xticks(fontsize=14)
-    plt.xlabel('Probability percentile', fontsize=14)
+    plt.xlabel('Probability (%)', fontsize=14)
+    plt.ylabel('Category',fontsize=14)
     plt.title('Theme: Probability of metric estimate (against ' + str(climastartyear) + '-' + str(climaendyear) +
               ' climatology)\nLocation: ' + sta_name + '\nForecast date: ' + f_date, loc='left', fontsize=14)
     plt.xlim(0, 101)
@@ -311,7 +312,7 @@ Category    RiskProbability'
     #-------------------------------------------------------------------------#
     # probability density plot
     sns.set_style("ticks")
-    fig = plt.figure()
+    fig = plt.figure(figsize=(7,6))
 
     if stat == 'normal':
         # Plot using normal distribution
@@ -331,7 +332,7 @@ Category    RiskProbability'
         raise ValueError('Please use only "normal" or "ecdf" stat method')
     plt.title('Theme: Probability of metric estimate (against ' + str(climastartyear) + '-' + str(climaendyear) +
               ' climatology)\nLocation: ' + sta_name + '\nForecast date: ' + f_date, loc='left', fontsize=14)
-    plt.xlabel('Yield (Kg/ha)', fontsize=14)
+    plt.xlabel('Metric value', fontsize=14)
     plt.ylabel('Probability density', fontsize=14)
 
     plt.yticks(fontsize=14)
@@ -349,7 +350,7 @@ Category    RiskProbability'
     plt.savefig(path + sta_name + '_' + f_date + '_ked_plot.png', dpi=300)
     plt.close()
 
-    fig2 = plt.figure()
+    fig2 = plt.figure(figsize=(8,6))
 
     alldata = np.append(climametric, forecametric)
     #binBoundaries = np.linspace(min(forecametric), max(forecametric),10)
@@ -366,13 +367,13 @@ Category    RiskProbability'
         probclim[z] = sps.norm.cdf(thres[z], climamean, climasd)
         modfreqclim[z] = (probclim[z] - probclim[z - 1])
 
-        #probyield = sps.norm.cdf(thres,projmean,projsd)
-        #probabilityyields = np.append(probabilityyields,probyield)
+        #probmetric = sps.norm.cdf(thres,projmean,projsd)
+        #probabilitymetric = np.append(probabilitymetric,probmetric)
         #probabilityclim = np.append(probabilityclim,probclim)
 
     #plt.hist(forecametric, bins=binBoundaries, color = 'b',lw=3)
     n, bins, patches = plt.hist((climametric, forecametric), bins=binBoundaries, lw=3, color=[
-                                "blue", "green"], label=["Climatology", "Ensemble"], normed=True)
+                                "blue", "green"], label=["Climatology", "Ensemble"], normed=True,alpha=0.9)
 
     # plt.plot(binBoundaries,modfreqclim)
     # https://plot.ly/matplotlib/histograms/
@@ -390,7 +391,7 @@ Category    RiskProbability'
              label="Weighted ensemble modelled distribution")
     plt.xlabel('Metric value', fontsize=14)
     plt.ylabel('Frequency', fontsize=14)
-    plt.title('Histogram of ensemble predictions (compared against ' + str(climastartyear) + '-' + str(climaendyear) +
+    plt.title('Theme: Histogram of ensemble predictions (against ' + str(climastartyear) + '-' + str(climaendyear) +
               ' climatology)\nLocation: ' + sta_name + '\nForecast date: ' + f_date, loc='left', fontsize=14)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
@@ -481,7 +482,7 @@ def weight_forecast(forecametric, Wmetric, weights, climastartyear, climaendyear
         allweights = np.append(allweights, np.repeat(weights[j], n_reps))
     allweights = (allweights / sum(allweights))
 
-    # weighted average of forecasted yield after being sorted by the metric
+    # weighted average of forecasted metric after being sorted by the metric
 
     # print(allweights)
     # print(zip(out[:,1],allweights))
