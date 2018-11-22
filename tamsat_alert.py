@@ -120,7 +120,7 @@ def tamsat_alert(fc_data,
     # If there are already no leap years in the data, this will return an identical
     # pandas dataframe
     data_no_leaps = strip_leap_days(data)
-    
+
 
     # Initialise the ensemble members.  This returns an OrderedDict mapping
     # ensemble member years (as ints) to the data
