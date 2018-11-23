@@ -167,7 +167,7 @@ def tamsat_alert(fc_data,
     # but is otherwise the same as in the old version.
     risk_prob_plot(clim_start_year, clim_end_year,
                    data.index[0].year, data.index[-1].year,
-                   cast_date.year, cast_date.month, cast_date.day,
+                   cast_date.year, cast_date.month, cast_date.day,poi_start_month,poi_start_day,poi_end_month,poi_end_day,
                    stat_type, location_name, tercile_weights,
                    climatological_sums, ensemble_totals, forecast_sums,
                    output_dir)
