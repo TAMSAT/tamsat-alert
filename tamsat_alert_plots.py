@@ -228,7 +228,7 @@ def risk_prob_plot(climastartyear, climaendyear,
     # Risk probability plot (Pentile bar plot format DA)
     pp = []
     sns.set_style("ticks")
-    fig = plt.figure(figsize=(8,6))
+    fig = plt.figure(figsize=(5,5))
     if stat == 'normal':
         verylow = probabilitymetric[19]
         low = probabilitymetric[39] - verylow
@@ -341,7 +341,7 @@ Category    RiskProbability'
     # plt.savefig(path + sta_name + '_' + f_date + '_ked_plot.png', dpi=300)
     # plt.close()
 
-    fig2 = plt.figure(figsize=(8,6))
+    fig2 = plt.figure(figsize=(6,5))
 
     alldata = np.append(climametric, forecametric)
     #binBoundaries = np.linspace(min(forecametric), max(forecametric),10)
