@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import tamsat_alert.utils_sm
+import tamsat_alert.utils_sm as utils_sm
 from tamsat_alert.tamsat_alert import ensemble_timeseries, strip_leap_days
 from tamsat_alert.tamsat_alert_plots import risk_prob_plot
 
