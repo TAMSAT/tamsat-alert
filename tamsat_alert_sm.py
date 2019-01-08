@@ -31,6 +31,8 @@ def tamsat_alert_sm(data,
                     wind_v_comp_str='vwind',
                     humidity_str='q',
                     temperature_range_str='Trange',
+                    fc_temp_str='temp',
+                    fc_precip_str='rfe',
                     spinup={
                         'num_spin_year': 2,
                         'spin_cyc': 5,
@@ -162,13 +164,13 @@ def tamsat_alert_sm(data,
     dataendyear = data.index[-1].year
     operation = np.sum
     # GG End
-    
+
     #ECB changed tmp so that the met forecast data can come from a different source to the SM driving data.
     #ECB added in variable met_ts_varname, which indicates whether we are using the temperature or precipitation from the fc_data pandas dataframe as our meteorological forecast variable.
     if met_ts_varname == "precipitation":
-        tmp = fc_data[precipitation_rate_str]
+        tmp = fc_data[fc_precip_str]
     if met_ts_varname == "temperature":
-        tmp = fc_data[temperature_str]
+        tmp = fc_data[fc_temp_str]
     met_ts = strip_leap_days(tmp)
 
     forecast_sums = ensemble_timeseries(met_ts,
@@ -214,7 +216,7 @@ def tamsat_alert_sm(data,
 
     tmp=cast_date-pd.Timestamp(cast_date.year,1,1)
     ind=tmp.days
-    
+
     # interpolating daily data to hourly values
     if data_period == 86400:
         P, p, u, q1, T, dt = utils_sm.interp_data(P, p, u, q1, T, dt, data_period, spinup['model_t_step'])
@@ -341,8 +343,8 @@ def tamsat_alert_sm(data,
         smcl_ensemble_member_df=pd.concat([smcl_histdata_splice,smcl_ensemble_member_df])
 
         #Calculate ensemble mean soil moisture over the period of interest
-        
-        
+
+
         start=pd.Timestamp(poi_start_year,poi_start_month,poi_start_day)
         end=pd.Timestamp(poi_end_year,poi_end_month,poi_end_day)
 
