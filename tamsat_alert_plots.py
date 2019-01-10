@@ -303,7 +303,7 @@ Category    RiskProbability'
     rp = rp.T
     # GG - Added outdir
     #ECB - got rid of directory structure
-    np.savetxt(outdir +str("quintiles.txt") , rp,
+    np.savetxt(outdir +str("/") +str("quintiles.txt") , rp,
                delimiter='     ', header=headval, fmt='%i  %0.2f')
 
     # #-------------------------------------------------------------------------#
