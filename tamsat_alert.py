@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
-from tamsat_alert_plots import risk_prob_plot
+from tamsat_alert.tamsat_alert_plots import risk_prob_plot
 
 
 def tamsat_alert(fc_data,
