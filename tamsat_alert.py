@@ -39,12 +39,17 @@ def tamsat_alert(fc_data,
     :param output_dir:      The path at which to output data and plots
     :param poi_start_day:   The day of the month of the start of the period of interest
     :param poi_start_month: The month of the year of the start of the period of interest
+    :param p_start_year:    The year of the start of the period of interest
     :param poi_end_day:     The day of the month of the end of the period of interest
     :param poi_end_month:   The month of the year of the end of the period of interest
+    :param p_end_year:    The year of the start of the period of interest
     :param fc_start_day:    The day of the month of the start of the meteorological forecast
     :param fc_start_month:  The month of the year of the start of the meteorological forecast
+    :param fc_start_year:   The year of the start of the meteorological forecast
     :param fc_end_day:      The day of the month of the end of the meteorological forecast
     :param fc_end_month:    The month of the year of the end of the meteorological forecast
+    :param fc_end_year:     The year of the end of the meteorological forecast
+
     :param tercile_weights: An array or tuple containing the tercile weights [low, med, hi]
                             Optional - if not specified, uses equal weightings
     :param clim_start_year: The start year of the climatology
