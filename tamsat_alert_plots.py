@@ -22,7 +22,8 @@ import calendar
 def risk_prob_plot(climastartyear, climaendyear,
                    datastartyear, dataendyear,
                    forecastyear, forecastmonth,forecastday,
-                   poi_start_month,poi_start_day,poi_end_month,poi_end_day,
+                   p_start_year,poi_start_month,poi_start_day,
+                   p_end_year,poi_end_month,poi_end_day,
                    stat, sta_name, weights,
                    climatology, forecast_vals, weightings,research_mode,outdir = './'):
     """
@@ -72,8 +73,8 @@ def risk_prob_plot(climastartyear, climaendyear,
     # set up actual dates for the x axis representation
     date = dt.date(forecastyear, forecastmonth, forecastday)
     f_date = date.strftime('%d-%b-%Y')
-    poi_start_date = str(poi_start_day).zfill(2)+'-'+calendar.month_name[poi_start_month][0:3]
-    poi_end_date = str(poi_end_day).zfill(2)+'-'+calendar.month_name[poi_end_month][0:3]
+    poi_start_date = str(poi_start_day).zfill(2)+'-'+calendar.month_name[poi_start_month][0:3]+'-'+str(p_start_year)
+    poi_end_date = str(poi_end_day).zfill(2)+'-'+calendar.month_name[poi_end_month][0:3]+'-'+str(p_end_year)
 
     climayears = np.arange(climastartyear, climaendyear + 1)
 
@@ -354,7 +355,7 @@ def risk_prob_plot(climastartyear, climaendyear,
       # plt.savefig(path + sta_name + '_' + f_date + '_ked_plot.png', dpi=300)
       # plt.close()
 
-      fig2 = plt.figure(figsize=(6,5))
+      fig2 = plt.figure(figsize=(6,6))
 
       alldata = np.append(climametric, forecametric)
       #binBoundaries = np.linspace(min(forecametric), max(forecametric),10)
@@ -395,8 +396,7 @@ def risk_prob_plot(climastartyear, climaendyear,
 
       plt.xlabel('Metric value', fontsize=14)
       plt.ylabel('Probability density', fontsize=14)
-      plt.title('Comparison of prediction against ' + str(climastartyear) + '-' + str(climaendyear) +
-                ' climatology'+'\nForecast date: ' + f_date+'\nPeriod of interest: '+poi_start_date+' to '+poi_end_date, loc='left', fontsize=14)
+      plt.title('Comparison of prediction against'+'\n'+ str(climastartyear) + '-' + str(climaendyear)+' climatology'+'\nForecast date: ' + f_date+'\nPeriod of interest: '+poi_start_date+' to '+poi_end_date, loc='left', fontsize=14)
       plt.xticks(fontsize=14)
       plt.yticks(fontsize=14)
       plt.xlim(min(alldata), max(alldata))
