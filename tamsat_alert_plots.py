@@ -159,7 +159,7 @@ def risk_prob_plot(climastartyear, climaendyear,
     if research_mode == 1:
       clim_out = np.vstack((climamean,climasd))
       proj_out = np.vstack((projmean,projsd))
-      return (np.vstack((thresholds,out)),np.vstack((climametric,forecametric,Wmetric)),clim_out,proj_out)
+      return (np.vstack((thresholds,out)),[climatology,forecast_vals,weightings],clim_out,proj_out)
 
     elif research_mode == 0:
 
