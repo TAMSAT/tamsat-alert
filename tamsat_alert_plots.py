@@ -240,7 +240,7 @@ def risk_prob_plot(climastartyear, climaendyear,
       # Risk probability plot (Pentile bar plot format DA)
       pp = []
       sns.set_style("ticks")
-      fig = plt.figure(figsize=(5,5))
+      fig = plt.figure(figsize=(6,5))
       if stat == 'normal':
           verylow = probabilitymetric[19]
           low = probabilitymetric[39] - verylow
@@ -279,7 +279,7 @@ def risk_prob_plot(climastartyear, climaendyear,
       plt.xticks(fontsize=14)
       plt.xlabel('Probability (%)', fontsize=14)
       plt.ylabel('Quintile category',fontsize=14)
-      plt.title('Forecast date: ' + f_date + '\nPeriod of interest: '+poi_start_date+' to '+poi_end_date, loc='left', fontsize=14)
+      plt.title('Forecast date: ' + f_date + '\nPeriod of interest: \n'+poi_start_date+' to '+poi_end_date, loc='left', fontsize=14)
       plt.xlim(0, 101)
       #plt.legend()
       plt.tight_layout()
