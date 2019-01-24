@@ -93,6 +93,9 @@ def tamsat_alert(fc_data,
                                         metric for weighting with met-forecast.
                             output[2] - clim ensemble mean and s.d.
                             output[3] - projected ensemble mean and s.d.
+                            ***Note that 'research_mode' will always make sure
+                            that the current year is independant of the forecast
+                            metric members, the climatology and the climatological ensembles
     '''
 
     # Set defaults for any missing optional args
@@ -143,6 +146,7 @@ def tamsat_alert(fc_data,
         except:
             location_name = ''
 
+    print('Cast date: '+str(cast_date))
     # Sanity check
     if(cast_date < run_start or cast_date > run_end):
         raise ValueError('cast_date must fall between run_start and run_end')
@@ -153,6 +157,12 @@ def tamsat_alert(fc_data,
     poi_end_date = pd.Timestamp(p_end_year,poi_end_month,poi_end_day)
     fc_start_date = pd.Timestamp(fc_start_year,fc_start_month,fc_start_day)
     fc_end_date = pd.Timestamp(fc_end_year,fc_end_month,fc_end_day)
+
+    # print('POI start date: '+str(poi_start_date))
+    # print('POI end date: '+str(poi_end_date))
+    # print('Forecast start date: '+str(fc_start_date))
+    # print('Forecast end date: '+str(fc_end_date))
+
     e_message = []
     bad_cast_flag = []
     if (cast_date > poi_end_date):
@@ -231,13 +241,24 @@ def tamsat_alert(fc_data,
                                           poi_end_year,
                                           operation)
 
+      # If in 'research_mode' remove the current year from the climatology to
+      # keep the climatology and ensemble member years independant
+      # of the year of interest. Use run_start date to get year as if the
+      # POI crosses the year boundary then it will remove the correct year
+      if research_mode == 1:
+          if run_start.year in np.arange(clim_start_year,clim_end_year+1,1):
+            ensemble_totals = ensemble_totals.drop(index=run_start.year)
+            climatological_sums = climatological_sums.drop(index=run_start.year)
+            forecast_sums = forecast_sums.drop(index=run_start.year)
+
       # This has been only very slightly modified from its original state
       # It now takes the DataFrames rather than filenames, and and output dir,
       # but is otherwise the same as in the old version.
       output = risk_prob_plot(clim_start_year, clim_end_year,
                      data.index[0].year, data.index[-1].year,
                      cast_date.year, cast_date.month, cast_date.day,
-                     poi_start_month, poi_start_day,poi_end_month,poi_end_day,
+                     p_start_year,poi_start_month, poi_start_day,
+                     p_end_year,poi_end_month,poi_end_day,
                      stat_type, location_name, tercile_weights,
                      climatological_sums, ensemble_totals, forecast_sums,research_mode,
                      output_dir)
