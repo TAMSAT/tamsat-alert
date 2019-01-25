@@ -165,15 +165,15 @@ def tamsat_alert(fc_data,
 
     e_message = []
     bad_cast_flag = []
-    if (cast_date > poi_end_date):
-        #raise ValueError('cast_date must be before POI end date')
-        e_message.append('Error: cast date after POI end date')
-        bad_cast_flag.append(1)
-    elif (cast_date > fc_end_date):
-        #raise Value Error('cast_date must be before forecast end date')
-        e_message.append('Error: cast date after forecast end date')
-        bad_cast_flag.append(2)
-    elif (fc_start_date > poi_end_date):
+    # if (cast_date > poi_end_date):
+    #     #raise ValueError('cast_date must be before POI end date')
+    #     e_message.append('Error: cast date after POI end date')
+    #     bad_cast_flag.append(1)
+    # elif (cast_date > fc_end_date):
+    #     #raise Value Error('cast_date must be before forecast end date')
+    #     e_message.append('Error: cast date after forecast end date')
+    #     bad_cast_flag.append(2)
+    if (fc_start_date > poi_end_date):
         e_message.append('Error: forecast period starts after POI ends')
         bad_cast_flag.append(3)
     elif (fc_end_date < poi_start_date):
