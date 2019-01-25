@@ -146,7 +146,7 @@ def tamsat_alert(fc_data,
         except:
             location_name = ''
 
-    print('Cast date: '+str(cast_date))
+    #print('Cast date: '+str(cast_date))
     # Sanity check
     if(cast_date < run_start or cast_date > run_end):
         raise ValueError('cast_date must fall between run_start and run_end')
