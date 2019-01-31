@@ -10,10 +10,10 @@ def tamsat_alert(fc_data,
                  cast_date,
                  var_of_interest,
                  output_dir,
-                 poi_start_day, poi_start_month,p_start_year,
-                 poi_end_day, poi_end_month,p_end_year,
-                 fc_start_day, fc_start_month,fc_start_year,
-                 fc_end_day, fc_end_month,fc_end_year,
+                 poi_start_day, poi_start_month,
+                 poi_end_day, poi_end_month,
+                 fc_start_day, fc_start_month,
+                 fc_end_day, fc_end_month,
                  precipitation_rate_str='pr', #ECB added in precipitation_rate_str and temperature_str as defaults to be set in the back end. These allow the meteorological forecast variable to be set by the user.
                  temperature_str='temp',
                  tercile_weights=[1,1,1],
@@ -22,8 +22,7 @@ def tamsat_alert(fc_data,
                  stat_type='normal',
                  cum_not_mean=True,
                  run_start=None, run_end=None,
-                 location_name=None,
-                 research_mode=0):
+                 location_name=None):
     '''
     Generates the data and plots for the cumulative rainfall part of TAMSAT Alert.
 
@@ -39,16 +38,12 @@ def tamsat_alert(fc_data,
     :param output_dir:      The path at which to output data and plots
     :param poi_start_day:   The day of the month of the start of the period of interest
     :param poi_start_month: The month of the year of the start of the period of interest
-    :param p_start_year:    The year of the start of the period of interest
     :param poi_end_day:     The day of the month of the end of the period of interest
     :param poi_end_month:   The month of the year of the end of the period of interest
-    :param p_end_year:      The year of the start of the period of interest
     :param fc_start_day:    The day of the month of the start of the meteorological forecast
     :param fc_start_month:  The month of the year of the start of the meteorological forecast
-    :param fc_start_year:   The year of the start of the meteorological forecast
     :param fc_end_day:      The day of the month of the end of the meteorological forecast
     :param fc_end_month:    The month of the year of the end of the meteorological forecast
-    :param fc_end_year:     The year of the end of the meteorological forecast
     :param tercile_weights: An array or tuple containing the tercile weights [low, med, hi]
                             Optional - if not specified, uses equal weightings
     :param clim_start_year: The start year of the climatology
@@ -81,21 +76,6 @@ def tamsat_alert(fc_data,
                             of the year after the cast_date
     :param location_name:   The name of the location to appear on the plots
                             Optional - if not specified, tries to calculate from the data
-    :param research_mode:   1 or 0 (default = 0), If 0 then code runs 'risk_prob_plot' and
-                            outputs standard plots and quintile probability text file.
-                            If 1, tamsat_alert 'risk_prob_plot' only
-                            returns a tuple called 'output' containing
-                            output[0] - risk assessment thresholds,
-                                        clim probabilities and
-                                        metric probabilities at each threshold
-                            output[1] - climatological ensemble members of metric,
-                                        forecast metric ensemble members,
-                                        metric for weighting with met-forecast.
-                            output[2] - clim ensemble mean and s.d.
-                            output[3] - projected ensemble mean and s.d.
-                            ***Note that 'research_mode' will always make sure
-                            that the current year is independant of the forecast
-                            metric members, the climatology and the climatological ensembles
     '''
 
     # Set defaults for any missing optional args
@@ -117,20 +97,23 @@ def tamsat_alert(fc_data,
         arbitrary_year, poi_start_month, poi_start_day)
     end_date = pd.Timestamp(
         arbitrary_year, poi_end_month, poi_end_day)
-    poi_crosses_year = start_date > end_date
-
-
+    poi_crosses_year = start_date > end_date    
+    
+    
     if run_start is None:
         #If we cross a year boundary and we are in the first year
-        if poi_crosses_year and cast_date.month > poi_end_month:
+        if poi_crosses_year and cast_date.month > poi_end_month:         
             run_start = pd.Timestamp(cast_date.year, 1, 1)
-        #If we cross a year boundary and we are in the second year
+            
+            
+        #If we cross a year boundary and we are in the second year 
         elif poi_crosses_year and cast_date.month < poi_end_month:
             run_start = pd.Timestamp(cast_date.year-1, 1, 1)
+        
         #If we do not cross a year boundary
         else:
             run_start=pd.Timestamp(cast_date.year,1,1)
-
+            
     if run_end is None:
         if poi_crosses_year and cast_date.month > poi_end_month:
             run_end = pd.Timestamp(cast_date.year+1, 12, 31)
@@ -139,6 +122,7 @@ def tamsat_alert(fc_data,
         else:
             run_end=pd.Timestamp(cast_date.year+1,12,31)
 
+    
 
     if(location_name is None):
         try:
@@ -146,126 +130,83 @@ def tamsat_alert(fc_data,
         except:
             location_name = ''
 
-    #print('Cast date: '+str(cast_date))
     # Sanity check
     if(cast_date < run_start or cast_date > run_end):
         raise ValueError('cast_date must fall between run_start and run_end')
 
-    # MY: some more sanity checks on the input dates
-    # Create a 'bad output flag' if cast date is after poi end or forecast end
-    poi_start_date = pd.Timestamp(p_start_year,poi_start_month,poi_start_day)
-    poi_end_date = pd.Timestamp(p_end_year,poi_end_month,poi_end_day)
-    fc_start_date = pd.Timestamp(fc_start_year,fc_start_month,fc_start_day)
-    fc_end_date = pd.Timestamp(fc_end_year,fc_end_month,fc_end_day)
+    # Select only the data we want to deal with
+    data = data[var_of_interest]
+    #ECB Select the the meteorological time series (precipitation or temperature) for the meteorological forecast time series
+    if met_ts_varname == "precipitation":
+        tmp = fc_data[precipitation_rate_str]
+    if met_ts_varname == "temperature":
+        tmp = fc_data[temperature_str]
+    fc_data_no_leaps = strip_leap_days(tmp)
 
-    # print('POI start date: '+str(poi_start_date))
-    # print('POI end date: '+str(poi_end_date))
-    # print('Forecast start date: '+str(fc_start_date))
-    # print('Forecast end date: '+str(fc_end_date))
+    # Remove leap years from data
+    # This is so that when we construct ensemble members from historical runs,
+    # they will all be guaranteed to have the same length.
+    #
+    # If there are already no leap years in the data, this will return an identical
+    # pandas dataframe
+    data_no_leaps = strip_leap_days(data)
+    
 
-    e_message = []
-    bad_cast_flag = []
-    # if (cast_date > poi_end_date):
-    #     #raise ValueError('cast_date must be before POI end date')
-    #     e_message.append('Error: cast date after POI end date')
-    #     bad_cast_flag.append(1)
-    # elif (cast_date > fc_end_date):
-    #     #raise Value Error('cast_date must be before forecast end date')
-    #     e_message.append('Error: cast date after forecast end date')
-    #     bad_cast_flag.append(2)
-    if (fc_start_date > poi_end_date):
-        e_message.append('Error: forecast period starts after POI ends')
-        bad_cast_flag.append(3)
-    elif (fc_end_date < poi_start_date):
-        e_message.append('Error: forecast period ends before POI starts')
-        bad_cast_flag.append(4)
-    else: # dates fine
-        bad_cast_flag = 0
+    # Initialise the ensemble members.  This returns an OrderedDict mapping
+    # ensemble member years (as ints) to the data
+    ensemble_members = init_ensemble_data(
+        data, data_no_leaps, cast_date, run_start,
+        run_end, clim_start_year, clim_end_year)
 
-    if bad_cast_flag == 0:
-      # Select only the data we want to deal with
-      data = data[var_of_interest]
-      #ECB Select the the meteorological time series (precipitation or temperature) for the meteorological forecast time series
-      if met_ts_varname == "precipitation":
-          tmp = fc_data[precipitation_rate_str]
-      if met_ts_varname == "temperature":
-          tmp = fc_data[temperature_str]
-      fc_data_no_leaps = strip_leap_days(tmp)
+    # Sum the ensemble members.  This returns a DataFrame with ensemble
+    # years as the index, and the variables of interest as the columns.
+    # Values are the sums of the ensemble members over the FIRST occurrence
+    # of the period of interest date range
+    ensemble_totals = sum_ensemble_members(
+        ensemble_members, poi_start_day, poi_start_month,
+        poi_end_day, poi_end_month)
 
-      # Remove leap years from data
-      # This is so that when we construct ensemble members from historical runs,
-      # they will all be guaranteed to have the same length.
-      #
-      # If there are already no leap years in the data, this will return an identical
-      # pandas dataframe
-      data_no_leaps = strip_leap_days(data)
-
-
-      # Initialise the ensemble members.  This returns an OrderedDict mapping
-      # ensemble member years (as ints) to the data
-      ensemble_members = init_ensemble_data(
-          data, data_no_leaps, cast_date, run_start,
-          run_end, clim_start_year, clim_end_year)
-
-      # Sum the ensemble members.  This returns a DataFrame with ensemble
-      # years as the index, and the variables of interest as the columns.
-      # Values are the sums of the ensemble members over the FIRST occurrence
-      # of the period of interest date range
-      ensemble_totals = sum_ensemble_members(
-          ensemble_members, poi_start_day, poi_start_month,
-          poi_end_day, poi_end_month)
-
-      # Pick which operation to perform on the ensemble members
-      if cum_not_mean:
-          operation = np.sum
-      else:
-          operation = np.mean
-
-      # Calculate the timeseries for the two desired periods
-      climatological_sums = ensemble_timeseries(data_no_leaps,
-                                          poi_start_day,
-                                          poi_start_month,
-                                          poi_end_day,
-                                          poi_end_month,
-                                          poi_start_year,
-                                          poi_end_year,
-                                          operation)
-
-      #ECB adjusted to read in fc_data with no leap years
-      forecast_sums = ensemble_timeseries(fc_data_no_leaps,
-                                          fc_start_day,
-                                          fc_start_month,
-                                          fc_end_day,
-                                          fc_end_month,
-                                          poi_start_year,
-                                          poi_end_year,
-                                          operation)
-
-      # If in 'research_mode' remove the current year from the climatology to
-      # keep the climatology and ensemble member years independant
-      # of the year of interest. Use run_start date to get year as if the
-      # POI crosses the year boundary then it will remove the correct year
-      if research_mode == 1:
-          if run_start.year in np.arange(clim_start_year,clim_end_year+1,1):
-            ensemble_totals = ensemble_totals.drop(index=run_start.year)
-            climatological_sums = climatological_sums.drop(index=run_start.year)
-            forecast_sums = forecast_sums.drop(index=run_start.year)
-
-      # This has been only very slightly modified from its original state
-      # It now takes the DataFrames rather than filenames, and and output dir,
-      # but is otherwise the same as in the old version.
-      output = risk_prob_plot(clim_start_year, clim_end_year,
-                     data.index[0].year, data.index[-1].year,
-                     cast_date.year, cast_date.month, cast_date.day,
-                     p_start_year,poi_start_month, poi_start_day,
-                     p_end_year,poi_end_month,poi_end_day,
-                     stat_type, location_name, tercile_weights,
-                     climatological_sums, ensemble_totals, forecast_sums,research_mode,
-                     output_dir)
-      if research_mode == 1:
-        return output
+    # Pick which operation to perform on the ensemble members
+    if cum_not_mean:
+        operation = np.sum
     else:
-      print(e_message)
+        operation = np.mean
+
+    # Calculate the timeseries for the two desired periods
+    climatological_sums = ensemble_timeseries(data_no_leaps,
+                                        poi_start_day,
+                                        poi_start_month,
+                                        poi_end_day,
+                                        poi_end_month,
+                                        poi_start_year,
+                                        poi_end_year,
+                                        operation)
+
+    #ECB adjusted to read in fc_data with no leap years
+    forecast_sums = forecast_timeseries(fc_data_no_leaps,
+                                        fc_start_day,
+                                        fc_start_month,
+                                        fc_end_day,
+                                        fc_end_month,
+                                        poi_start_year,
+                                        poi_end_year,
+                                        cast_date,
+                                        operation)
+
+
+    # This has been only very slightly modified from its original state
+    # It now takes the DataFrames rather than filenames, and and output dir,
+    # but is otherwise the same as in the old version.
+    
+
+    risk_prob_plot(clim_start_year, clim_end_year,
+                   data.index[0].year, data.index[-1].year,
+                   cast_date.year, cast_date.month, cast_date.day,
+                   poi_start_month, poi_start_day,poi_end_month,poi_end_day,
+                   stat_type, location_name, tercile_weights,
+                   climatological_sums, ensemble_totals, forecast_sums,
+                   output_dir)
+
 
 def strip_leap_days(data):
     '''
@@ -312,6 +253,8 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
                                 the ensemble data
     '''
 
+
+    
     spinupdata = data if retain_leaps else no_leap_data
 
     spinup = spinupdata.loc[np.logical_and(
@@ -323,26 +266,13 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
     # Calculate number of days to run after cast date
     n_days = (run_end - cast_date).days
 
-    # MY: Have to check if cast_date crosses year
-    crosses_year = cast_date.year > run_start.year
-
     for year in np.arange(ensemble_start_year, ensemble_end_year + 1):
         # For every ensemble year, take subset of no leap data FROM:
         # The cast date in ensemble year
         # TO
         # The run_end date in ensemble year
 
-        # MY: Need to check if cast date crosses year to obtain correct data
-        #  when cast date after year boundary
-        # If cast date before year boundary, the data is already representative
-        # of year to year + 1
-        # However, if cast date after the year boundary, need to shift start
-        # date from ensemble_year to ensemble_year + 1 to get correct data.
-        if crosses_year == False:
-          start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
-        elif crosses_year == True:
-          start_date = pd.Timestamp(year+1,cast_date.month,cast_date.day)
-        #start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
+        start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
         end_date = start_date + pd.Timedelta(days=n_days)
         ensemble_range = np.logical_and(
             no_leap_data.index >= start_date,
@@ -397,7 +327,7 @@ def sum_ensemble_members(members, start_day, start_month, end_day, end_month):
     return pd.DataFrame(values, members)
 
 
-def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_month, ensemble_start_year, ensemble_end_year, operation):
+def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_month, start_year, end_year, operation):
     '''
     For each year between start_year and end_year, performs the operation
     on data ranging from the start date (start_day/start_month),
@@ -411,8 +341,8 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
     :param start_month:     The month of the year to start operating on
     :param end_day:         The day of the month to stop operating on (exclusive)
     :param end_month:       The month of the year to stop operating on (exclusive)
-    :param ensemble_start_year: The first year to perform the operation on
-    :param ensemble_end_year: The last year to perform the operation on.
+    :param start_year:      The first year to perform the operation on
+    :param end_year:        The last year to perform the operation on.
     :param operation:       The operation to perform.  Should be a function (e.g. np.sum)
 
     :return:                A pandas DataFrame containing years as the index, and
@@ -431,15 +361,102 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
         arbitrary_year, end_month, end_day)
     crosses_year = start_date > end_date
 
-
-    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length.
-
+    
+    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length. 
+    
     #if(crosses_year):
     #    years = np.arange(start_year, end_year)
     #else:
     #    years = np.arange(start_year, end_year + 1)
+    
+    years = np.arange(start_year,end_year+1)
+    values = []
+    for year in years:
+        start = pd.Timestamp(year, start_month, start_day)
 
-    years = np.arange(ensemble_start_year,ensemble_end_year+1)
+        # We need to increment the year if the dates cross the year boundary
+        before_end_year = year
+        if crosses_year:
+            before_end_year = year + 1
+        end = pd.Timestamp(
+            before_end_year, end_month, end_day)
+
+        if(end > data_no_leaps.index[-1]):
+            # In this case, the end point falls outside the data range
+            # This would lead to truncated data, so we do not perform the
+            # operation.  This will also be true for all following years,
+            # hence we use break, rather than continue
+            break
+
+        # Subset the data to extract the desired period for the current year
+        subset = data_no_leaps.loc[np.logical_and(
+            data_no_leaps.index >= start,
+            data_no_leaps.index < end,
+        )]
+
+        # Perform the operation (usually np.sum() or np.mean() on the subset)
+        values.append(operation(subset))
+
+    return pd.DataFrame(values, years)
+
+def forecast_timeseries(data_no_leaps, start_day, start_month, end_day, end_month, start_year, end_year, cast_date, operation):
+    '''
+    For each year between start_year and end_year, performs the operation
+    on data ranging from the start date (start_day/start_month),
+    to the end date (end_day/end_month) of that year.
+
+    If the start-end dates cross the year boundary, the year is defined as the
+    year at the start date.
+
+    :param data_no_leaps:   A pandas DataFrame containing the data, with leap days removed
+    :param start_day:       The day of the month to start operating on
+    :param start_month:     The month of the year to start operating on
+    :param end_day:         The day of the month to stop operating on (exclusive)
+    :param end_month:       The month of the year to stop operating on (exclusive)
+    :param start_year:      The first year to perform the operation on
+    :param end_year:        The last year to perform the operation on.
+    :param operation:       The operation to perform.  Should be a function (e.g. np.sum)
+
+    :return:                A pandas DataFrame containing years as the index, and
+                            the results of the operation as the values
+    '''
+
+    # This should be a leap year, to ensure we will have a valid date
+    # Otherwise it is completely arbitrary, and only used to check
+    # whether the range spans the year boundary.
+    arbitrary_year = 2000
+
+    # Detect whether the desired period crosses a year
+    start_date = pd.Timestamp(
+        arbitrary_year, start_month, start_day)
+    end_date = pd.Timestamp(
+        arbitrary_year, end_month, end_day)
+    crosses_year = start_date > end_date
+
+    
+    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length. 
+    
+    #if(crosses_year):
+    #    years = np.arange(start_year, end_year)
+    #else:
+    #    years = np.arange(start_year, end_year + 1)
+    
+    years = np.arange(start_year,end_year+1)
+    
+    #If forecast period crosses the year
+    if crosses_year:
+        #If the cast date is in year +1 and is within the forecast period, the year in question is for year - 1. For example, if the cast date is January 10th 1983, a DJF forecast should start in December 1982, NOT December 1983
+        if cast_date.month <= end_month:
+            years=years-1
+            
+    #If forecast period does not cross the year
+    if crosses_year == False:
+        #As the forecast period does not cross the year, we assume initially that the year of the forecast is the same as the year of the cast
+        end_date = pd.Timestamp(cast_date.year,end_month,end_day)
+        #With the assumption above, we now test to see whether the cast date is after the end of the forecast period. If it is, the forecast period is pushed to the next year.
+        if cast_date >= end_date:
+            years = years+1
+    
     values = []
     for year in years:
         start = pd.Timestamp(year, start_month, start_day)
