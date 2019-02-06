@@ -97,23 +97,23 @@ def tamsat_alert(fc_data,
         arbitrary_year, poi_start_month, poi_start_day)
     end_date = pd.Timestamp(
         arbitrary_year, poi_end_month, poi_end_day)
-    poi_crosses_year = start_date > end_date    
-    
-    
+    poi_crosses_year = start_date > end_date
+
+
     if run_start is None:
         #If we cross a year boundary and we are in the first year
-        if poi_crosses_year and cast_date.month > poi_end_month:         
+        if poi_crosses_year and cast_date.month > poi_end_month:
             run_start = pd.Timestamp(cast_date.year, 1, 1)
-            
-            
-        #If we cross a year boundary and we are in the second year 
+
+
+        #If we cross a year boundary and we are in the second year
         elif poi_crosses_year and cast_date.month < poi_end_month:
             run_start = pd.Timestamp(cast_date.year-1, 1, 1)
-        
+
         #If we do not cross a year boundary
         else:
             run_start=pd.Timestamp(cast_date.year,1,1)
-            
+
     if run_end is None:
         if poi_crosses_year and cast_date.month > poi_end_month:
             run_end = pd.Timestamp(cast_date.year+1, 12, 31)
@@ -122,7 +122,7 @@ def tamsat_alert(fc_data,
         else:
             run_end=pd.Timestamp(cast_date.year+1,12,31)
 
-    
+
 
     if(location_name is None):
         try:
@@ -150,7 +150,7 @@ def tamsat_alert(fc_data,
     # If there are already no leap years in the data, this will return an identical
     # pandas dataframe
     data_no_leaps = strip_leap_days(data)
-    
+
 
     # Initialise the ensemble members.  This returns an OrderedDict mapping
     # ensemble member years (as ints) to the data
@@ -197,7 +197,7 @@ def tamsat_alert(fc_data,
     # This has been only very slightly modified from its original state
     # It now takes the DataFrames rather than filenames, and and output dir,
     # but is otherwise the same as in the old version.
-    
+
 
     risk_prob_plot(clim_start_year, clim_end_year,
                    data.index[0].year, data.index[-1].year,
@@ -254,7 +254,7 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
     '''
 
 
-    
+
     spinupdata = data if retain_leaps else no_leap_data
 
     spinup = spinupdata.loc[np.logical_and(
@@ -266,13 +266,25 @@ def init_ensemble_data(data, no_leap_data, cast_date, run_start, run_end, ensemb
     # Calculate number of days to run after cast date
     n_days = (run_end - cast_date).days
 
+    # MY: Have to check if cast_date crosses year
+    crosses_year = cast_date.year > run_start.year
+
     for year in np.arange(ensemble_start_year, ensemble_end_year + 1):
         # For every ensemble year, take subset of no leap data FROM:
         # The cast date in ensemble year
         # TO
         # The run_end date in ensemble year
-
-        start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
+        # MY: Need to check if cast date crosses year to obtain correct data
+        #  when cast date after year boundary
+        # If cast date before year boundary, the data is already representative
+        # of year to year + 1
+        # However, if cast date after the year boundary, need to shift start
+        # date from ensemble_year to ensemble_year + 1 to get correct data.
+        if crosses_year == False:
+          start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
+        elif crosses_year == True:
+          start_date = pd.Timestamp(year+1,cast_date.month,cast_date.day)
+        # start_date = pd.Timestamp(year, cast_date.month, cast_date.day)
         end_date = start_date + pd.Timedelta(days=n_days)
         ensemble_range = np.logical_and(
             no_leap_data.index >= start_date,
@@ -361,14 +373,14 @@ def ensemble_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
         arbitrary_year, end_month, end_day)
     crosses_year = start_date > end_date
 
-    
-    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length. 
-    
+
+    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length.
+
     #if(crosses_year):
     #    years = np.arange(start_year, end_year)
     #else:
     #    years = np.arange(start_year, end_year + 1)
-    
+
     years = np.arange(start_year,end_year+1)
     values = []
     for year in years:
@@ -433,22 +445,22 @@ def forecast_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
         arbitrary_year, end_month, end_day)
     crosses_year = start_date > end_date
 
-    
-    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length. 
-    
+
+    #ECB: commented out this so that our ensemble members, forecast members and climatological members are calculated consistently. This is especially crucial that the forecast_members and ensemble_members are the same length.
+
     #if(crosses_year):
     #    years = np.arange(start_year, end_year)
     #else:
     #    years = np.arange(start_year, end_year + 1)
-    
+
     years = np.arange(start_year,end_year+1)
-    
+
     #If forecast period crosses the year
     if crosses_year:
         #If the cast date is in year +1 and is within the forecast period, the year in question is for year - 1. For example, if the cast date is January 10th 1983, a DJF forecast should start in December 1982, NOT December 1983
         if cast_date.month <= end_month:
             years=years-1
-            
+
     #If forecast period does not cross the year
     if crosses_year == False:
         #As the forecast period does not cross the year, we assume initially that the year of the forecast is the same as the year of the cast
@@ -456,7 +468,7 @@ def forecast_timeseries(data_no_leaps, start_day, start_month, end_day, end_mont
         #With the assumption above, we now test to see whether the cast date is after the end of the forecast period. If it is, the forecast period is pushed to the next year.
         if cast_date >= end_date:
             years = years+1
-    
+
     values = []
     for year in years:
         start = pd.Timestamp(year, start_month, start_day)

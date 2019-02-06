@@ -56,7 +56,7 @@ def risk_prob_plot(climastartyear, climaendyear,
     # creating folders to put output data and plot
     #------------------------------------------------------------------#
     # GG - Added outdir to paths
-    
+
     #ECB getting rid of directory struction
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -278,10 +278,10 @@ def risk_prob_plot(climastartyear, climaendyear,
     if stat == 'normal':
         # GG - Added outdir
         #ECB - got rid of directory structure
-        path = outdir 
+        path = outdir
     elif stat == 'ecdf':
         # GG - Added outdir
-        path = outdir 
+        path = outdir
     else:
         raise ValueError('Please use only "normal" or "ecdf" stat method')
 
@@ -347,7 +347,7 @@ Category    RiskProbability'
     # plt.savefig(path + sta_name + '_' + f_date + '_ked_plot.png', dpi=300)
     # plt.close()
 
-    fig2 = plt.figure(figsize=(6,5))
+    fig2 = plt.figure(figsize=(6,6))
 
     alldata = np.append(climametric, forecametric)
     #binBoundaries = np.linspace(min(forecametric), max(forecametric),10)
@@ -388,7 +388,7 @@ Category    RiskProbability'
 
     plt.xlabel('Metric value', fontsize=14)
     plt.ylabel('Probability density', fontsize=14)
-    plt.title('Comparison of prediction against ' + str(climastartyear) + '-' + str(climaendyear) +
+    plt.title('Comparison of prediction against \n' + str(climastartyear) + '-' + str(climaendyear) +
               ' climatology'+'\nForecast date: ' + f_date+'\nPeriod of interest: '+poi_start_date+' to '+poi_end_date, loc='left', fontsize=14)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
